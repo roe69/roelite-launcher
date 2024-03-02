@@ -51,23 +51,11 @@
         window.api.checkJava11();
         setupLauncherButtons();
         setBackgroundRandom();
-        setInterval(setBackground, (1 + Math.random()) * 60_000);
+        setInterval(setBackground, (1 + Math.random()) * 1500);
       });
 
       let currentIndex = 0; // Start at the first wallpaper
-      const wallpapers = [
-        "1.png",
-        "1.gif",
-        "2.png",
-        "2.gif",
-        "3.png",
-        "4.png",
-        "3.gif",
-        "5.png",
-        "6.png",
-        "4.gif",
-        "7.png",
-      ];
+      const wallpapers = Array.from({ length: 11 }, (_, index) => `${index + 1}.webp`);
 
       function setBackground() {
         // Select a wallpaper based on currentIndex

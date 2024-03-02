@@ -47,7 +47,7 @@ app.whenReady().then(() => {
   });
   mainWindow.setMenuBarVisibility(false);
   mainWindow.setFullScreenable(false);
-  mainWindow.setTitle("RoeLite Launcher")
+  mainWindow.setTitle("RoeLite Launcher");
   mainWindow.loadFile(path.join(__dirname, "index.html"));
   checkForUpdates(mainWindow); // Check for updates
 });
