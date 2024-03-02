@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="index.css" />
+    <title>RoeLite Launcher</title>
+    <style>
+      /* Ensure the body covers the full viewport and no repeat for the background */
+      html,
+      body {
+        height: 100%; /* Make sure the html and body elements are at least as tall as the viewport */
+        width: 100%; /* Make sure the html and body elements are at least as tall as the viewport */
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      body {
+        transition: background-image 2s ease-in-out; /* Smooth transition for background image change */
+        background: no-repeat center center fixed; /* No repeat, centered, and fixed position */
+        background-size: 100% 100%; /* Stretch the background image to cover the entire screen */
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="installText" style="display: none; text-align: center">null</div>
+    <progress
+      id="install-progress"
+      value="0"
+      max="100"
+      style="display: none"
+    ></progress>
+    <div id="buttonContainer" style="display: none">
+      <!-- Buttons for launchers will be dynamically inserted here -->
+    </div>
+    <footer
+      id="version-footer"
+      style="
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        pointer-events: none;
+      "
+    >
+      Java: Not Checked | Launcher: Unknown
+    </footer>
+    <script>
+      const launchers = ["OSRS", "OSRSPS"];
+
+      document.addEventListener("DOMContentLoaded", function () {
+        window.api.checkJava11();
+        setupLauncherButtons();
+        setBackgroundRandom();
+        setInterval(setBackground, (1 + Math.random()) * 60_000);
+      });
+
+      let currentIndex = 0; // Start at the first wallpaper
+      const wallpapers = [
+        "1.png",
+        "1.gif",
+        "2.png",
+        "2.gif",
+        "3.png",
+        "4.png",
+        "3.gif",
+        "5.png",
+        "6.png",
+        "4.gif",
+        "7.png",
+      ];
+
+      function setBackground() {
+        // Select a wallpaper based on currentIndex
+        const wallpaper = wallpapers[currentIndex];
+        // Set it as the background image of the body, assuming the wallpapers are in the './wallpapers' directory
+        document.body.style.backgroundImage = `url('./wallpapers/${wallpaper}')`;
+        // Increment the currentIndex, and wrap it if necessary
+        currentIndex = (currentIndex + 1) % wallpapers.length;
+      }
+
+      function setBackgroundRandom() {
+        // Randomly select a wallpaper filename
+        currentIndex = Math.floor(Math.random() * wallpapers.length);
+        const randomWallpaper = wallpapers[currentIndex];
+        // Get the current background image URL
+        const currentBackgroundImage = document.body.style.backgroundImage;
+        // Create a new URL for the background image
+        const newBackgroundImage = `url('./wallpapers/${randomWallpaper}')`;
+        // If the new background is different from the current, update it
+        if (currentBackgroundImage !== newBackgroundImage) {
+          document.body.style.backgroundImage = newBackgroundImage;
+        }
+      }
+      function createButton(name) {
+        const button = document.createElement("button");
+        button.id = `play-${name}`;
+        button.innerText = `Download ${name}`;
+        button.className = "download";
+        button.addEventListener("click", function () {
+          const jarName = `${name}-Launcher.jar`;
+          const isDownload = this.classList.contains("download");
+          if (isDownload) {
+            window.api.downloadJar(
+              jarName,
+              `https://dev.roelite.net/${name}/${jarName}`
+            );
+          } else {
+            window.api.runJar(jarName);
+          }
+        });
+        return button;
+      }
+
+      function setupLauncherButtons() {
+        const container = document.getElementById("buttonContainer");
+        // Clear existing content in the container
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+        container.style.display = "flex";
+        launchers.forEach((name) => {
+          const jarName = `${name}-Launcher.jar`;
+          const exists = window.api.jarExists(jarName);
+          // Create a container for each logo and button pair
+          const buttonContainer = document.createElement("div");
+          buttonContainer.className = "button-container";
+          // Create logo element
+          const logo = document.createElement("img");
+          logo.src = `./icons/${name.toLowerCase()}.png`;
+          logo.className = "button-logo";
+          buttonContainer.appendChild(logo); // Append logo to the button container
+          // Create button
+          const button = createButton(name);
+          updateButton(button, exists, name);
+          buttonContainer.appendChild(button); // Append button to the button container
+          // Create a progress bar container
+          const progressBarContainer = document.createElement("div");
+          progressBarContainer.className = "progress-bar";
+          // Create the progress bar itself
+          const progressBar = document.createElement("div");
+          progressBar.id = `progress-${name}`;
+          progressBar.className = "progress-bar-value";
+          // Append the progress bar to its container
+          progressBarContainer.appendChild(progressBar);
+          // Append the progress bar container after the button
+          buttonContainer.appendChild(progressBarContainer);
+          container.appendChild(buttonContainer); // Append the button container to the main container
+        });
+      }
+
+      function updateButton(button, exists, name) {
+        button.innerText = exists ? `Play ${name}` : `Download ${name}`;
+        button.classList.remove("download", "play");
+        button.classList.add(exists ? "play" : "download");
+      }
+
+      window.api.onDownloadComplete((event, jarName) => {
+        const name = jarName.replace("-Launcher.jar", "");
+        const button = document.getElementById(`play-${name}`);
+        if (button) {
+          updateButton(button, true, name);
+        }
+      });
+
+      window.api.onVersionInfo(({ javaVersion, launcherVersion }) => {
+        const versionFooter = document.getElementById("version-footer");
+        const currentVersions = versionFooter.textContent
+          .split("|")
+          .reduce((acc, part) => {
+            const [key, value] = part
+              .trim()
+              .split(":")
+              .map((s) => s.trim());
+            acc[key] = value;
+            return acc;
+          }, {});
+
+        // If 'javaVersion' or 'launcherVersion' is 'n/a', keep the current value
+        const newJavaVersion =
+          javaVersion !== "n/a" ? javaVersion : currentVersions["Java"];
+        const newLauncherVersion =
+          launcherVersion !== "n/a"
+            ? launcherVersion
+            : currentVersions["Launcher"];
+
+        versionFooter.textContent = `Java: ${newJavaVersion} | Launcher: ${newLauncherVersion}`;
+      });
+
+      window.api.onInstallProgress(({ stage, progress }) => {
+        const installText = document.getElementById("installText");
+        const progressBar = document.getElementById("install-progress");
+        const buttonContainer = document.getElementById("buttonContainer");
+
+        installText.style.display = "block";
+        installText.textContent = `${stage}...`;
+        progressBar.style.display = "block";
+        progressBar.value = progress;
+
+        // Hide buttonContainer while the install-progress bar is visible
+        buttonContainer.style.display = progress < 100 ? "none" : "flex";
+
+        if (stage === "Installation Complete") {
+          progressBar.style.display = "none";
+          installText.style.display = "none"; // Hide installation text after complete
+          setupLauncherButtons(); // This will also ensure buttonContainer is shown again
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,97 @@
+html,
+body {
+  background-color: #121212; /* Dark background for dark mode */
+  color: #ffffff; /* Light text color for contrast */
+  height: 100%;
+  margin: 0; /* Remove default margin */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#buttonContainer {
+  /* Use initial settings if you want the container to be the full width of its parent */
+  width: initial;
+  flex-direction: row; /* Align children in a row */
+  align-items: flex-start; /* Align children at the start of the cross axis */
+}
+
+.button-container {
+  /* Each .button-container should also be a flex container to align its children (logo and button) in a column */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 5px; /* Add some margin around each .button-container */
+}
+
+.button-logo {
+  width: 200px;
+  height: 100px;
+  object-fit: contain; /* This will ensure the aspect ratio is maintained */
+  margin-bottom: 5px; /* Space between logo and button */
+  pointer-events: none;
+}
+
+button.download {
+  background-color: #4c98af;
+}
+
+button.play {
+  background-color: #4caf50;
+}
+
+/* Manual color adjustment for hover state */
+button.download:hover {
+  background-color: #35707d; /* Darker shade of #4c98af */
+}
+
+button.play:hover {
+  background-color: #347a35; /* Darker shade of #4caf50, example color */
+}
+
+button {
+  width: 150px;
+  border: none;
+  color: white;
+  padding: 5px 10px; /* Smaller padding */
+  display: inline-flex; /* Use inline-flex to allow for wrapping */
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 5px;
+  margin: 5px;
+}
+
+/* Install Bar Style */
+#installText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+}
+
+#install-progress {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+}
+
+html,
+body,
+button,
+#buttonContainer,
+.button-container,
+.button-logo {
+  -webkit-user-select: none; /* Chrome, Safari, Opera */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera, and Firefox */
+}
+
+.button-logo {
+  pointer-events: none; /* Prevents dragging of images */
+}
