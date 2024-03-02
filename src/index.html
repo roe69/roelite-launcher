@@ -55,7 +55,10 @@
       });
 
       let currentIndex = 0; // Start at the first wallpaper
-      const wallpapers = Array.from({ length: 11 }, (_, index) => `${index + 1}.webp`);
+      const wallpapers = Array.from(
+        { length: 11 },
+        (_, index) => `${index + 1}.webp`
+      );
 
       function setBackground() {
         // Select a wallpaper based on currentIndex
