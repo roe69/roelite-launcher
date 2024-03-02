@@ -14,7 +14,7 @@ module.exports = {
         authors: "Roe",
         exe: "RoeLite.exe",
         loadingGif: "./src/icons/loading.gif",
-        iconUrl: "https://docs.roelite.net/favicon.ico",
+        iconUrl: "https://roelite.net/favicon.ico",
         noMsi: true,
         remoteReleases: "",
         shortcutName: "RoeLite",
