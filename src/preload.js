@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("api", {
   downloadJar: (jarName, url) => ipcRenderer.send("downloadJar", jarName, url),
+  downloadAndUpdate: () => ipcRenderer.send("downloadAndUpdate"),
   jarExists: (jarName) => {
     return ipcRenderer.sendSync("jarExists", jarName);
   },

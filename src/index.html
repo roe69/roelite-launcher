@@ -50,10 +50,10 @@
         { length: 11 },
         (_, index) => `${index + 1}.webp`
       );
+      let updateAvailable = false; // Default to false, updated based on version info
 
       document.addEventListener("DOMContentLoaded", function () {
         window.api.checkJava11();
-        setupLauncherButtons();
         setBackgroundRandom();
         setInterval(setBackgroundRandom, (1 + Math.random() * 9) * 60_000); // Random time between 1 and 10 minutes
       });
@@ -74,10 +74,23 @@
 
       function createButton(name) {
         const button = document.createElement("button");
-        button.id = `play-${name}`;
-        button.innerText = `Download ${name}`;
-        button.className = "download";
+        // Set the button's id based on whether it's for a launcher update or a regular launcher
+        button.id =
+          name === "Launcher Update" ? "update-launcher" : `play-${name}`;
+        // Set the button text accordingly
+        button.innerText =
+          name === "Launcher Update"
+            ? "Apply Launcher Update"
+            : `Download ${name}`;
+        // Assign appropriate CSS class for styling
+        button.className = name === "Launcher Update" ? "update" : "download";
         button.addEventListener("click", function () {
+          if (name === "Launcher Update") {
+            // Call the update function if it's the update button
+            window.api.downloadAndUpdate();
+            return; // Exit after update function call
+          }
+          // Below is the logic for other buttons that are not for updating the launcher
           const jarName = `${name}-Launcher.jar`;
           const isDownload = this.classList.contains("download");
           if (isDownload) {
@@ -91,6 +104,69 @@
         });
         return button;
       }
+
+      function updateButton(button, exists, name) {
+        button.innerText = exists ? `Play ${name}` : `Download ${name}`;
+        button.classList.remove("download", "play");
+        button.classList.add(exists ? "play" : "download");
+      }
+
+      window.api.onDownloadComplete((event, jarName) => {
+        const name = jarName.replace("-Launcher.jar", "");
+        const button = document.getElementById(`play-${name}`);
+        if (button) {
+          updateButton(button, true, name);
+        }
+      });
+
+      window.api.onVersionInfo(
+        ({ javaVersion, launcherVersion, shouldUpdate }) => {
+          const versionFooter = document.getElementById("version-footer");
+          const currentVersions = versionFooter.textContent
+            .split("|")
+            .reduce((acc, part) => {
+              const [key, value] = part
+                .trim()
+                .split(":")
+                .map((s) => s.trim());
+              acc[key] = value;
+              return acc;
+            }, {});
+
+          // Updating footer text
+          const newJavaVersion =
+            javaVersion !== "n/a" ? javaVersion : currentVersions["Java"];
+          const newLauncherVersion =
+            launcherVersion !== "n/a"
+              ? launcherVersion
+              : currentVersions["Launcher"];
+          versionFooter.textContent = `Java: ${newJavaVersion} | Launcher: ${newLauncherVersion}`;
+
+          const buttonContainer = document.getElementById("buttonContainer");
+          updateAvailable = shouldUpdate; // Update the global shouldUpdate based on the latest info
+          setupLauncherButtons();
+        }
+      );
+
+      window.api.onInstallProgress(({ stage, progress }) => {
+        const installText = document.getElementById("installText");
+        const progressBar = document.getElementById("install-progress");
+        const buttonContainer = document.getElementById("buttonContainer");
+
+        installText.style.display = "block";
+        installText.textContent = `${stage}...`;
+        progressBar.style.display = "block";
+        progressBar.value = progress;
+
+        // Hide buttonContainer while the install-progress bar is visible
+        buttonContainer.style.display = progress < 100 ? "none" : "flex";
+
+        if (stage === "Installation Complete" || progress >= 100) {
+          progressBar.style.display = "none";
+          installText.style.display = "none"; // Hide installation text after complete
+          setupLauncherButtons(); // This will also ensure buttonContainer is shown again
+        }
+      });
 
       function setupLauncherButtons() {
         const container = document.getElementById("buttonContainer");
@@ -127,65 +203,12 @@
           buttonContainer.appendChild(progressBarContainer);
           container.appendChild(buttonContainer); // Append the button container to the main container
         });
-      }
-
-      function updateButton(button, exists, name) {
-        button.innerText = exists ? `Play ${name}` : `Download ${name}`;
-        button.classList.remove("download", "play");
-        button.classList.add(exists ? "play" : "download");
-      }
-
-      window.api.onDownloadComplete((event, jarName) => {
-        const name = jarName.replace("-Launcher.jar", "");
-        const button = document.getElementById(`play-${name}`);
-        if (button) {
-          updateButton(button, true, name);
+        // Append the update button if required
+        if (updateAvailable) {
+          const updateButton = createButton("Launcher Update");
+          container.appendChild(updateButton);
         }
-      });
-
-      window.api.onVersionInfo(({ javaVersion, launcherVersion }) => {
-        const versionFooter = document.getElementById("version-footer");
-        const currentVersions = versionFooter.textContent
-          .split("|")
-          .reduce((acc, part) => {
-            const [key, value] = part
-              .trim()
-              .split(":")
-              .map((s) => s.trim());
-            acc[key] = value;
-            return acc;
-          }, {});
-
-        // If 'javaVersion' or 'launcherVersion' is 'n/a', keep the current value
-        const newJavaVersion =
-          javaVersion !== "n/a" ? javaVersion : currentVersions["Java"];
-        const newLauncherVersion =
-          launcherVersion !== "n/a"
-            ? launcherVersion
-            : currentVersions["Launcher"];
-
-        versionFooter.textContent = `Java: ${newJavaVersion} | Launcher: ${newLauncherVersion}`;
-      });
-
-      window.api.onInstallProgress(({ stage, progress }) => {
-        const installText = document.getElementById("installText");
-        const progressBar = document.getElementById("install-progress");
-        const buttonContainer = document.getElementById("buttonContainer");
-
-        installText.style.display = "block";
-        installText.textContent = `${stage}...`;
-        progressBar.style.display = "block";
-        progressBar.value = progress;
-
-        // Hide buttonContainer while the install-progress bar is visible
-        buttonContainer.style.display = progress < 100 ? "none" : "flex";
-
-        if (stage === "Installation Complete") {
-          progressBar.style.display = "none";
-          installText.style.display = "none"; // Hide installation text after complete
-          setupLauncherButtons(); // This will also ensure buttonContainer is shown again
-        }
-      });
+      }
     </script>
   </body>
 </html>

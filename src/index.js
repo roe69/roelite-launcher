@@ -1,4 +1,4 @@
-const { checkForUpdates } = require("./js/updatemanager");
+const { checkForUpdates, downloadAndUpdate } = require("./js/updatemanager");
 const { handleSquirrelEvent } = require("./js/squirrelevents");
 const log = require("electron-log");
 const path = require("path");
@@ -65,8 +65,11 @@ ipcMain.on("checkJava11", (event) => {
   fs.unlink(jdkZipPath, (err) => {});
   checkJavaVersion((javaVersion) => {
     if (javaVersion) {
-      const launcherVersion = "n/a";
-      event.reply("versionInfo", { javaVersion, launcherVersion });
+      event.reply("versionInfo", {
+        javaVersion,
+        launcherVersion: "n/a",
+        shouldUpdate: false,
+      });
       updateProgress("Installation Complete", 100);
     } else {
       installJava11();
@@ -78,11 +81,16 @@ ipcMain.on("downloadJar", (event, jarName, url) => {
   downloadJar(jarName, url);
 });
 
+ipcMain.on("downloadAndUpdate", (event) => {
+  downloadAndUpdate();
+});
+
 ipcMain.on("runJar", (event, jarName) => {
   runJar(jarName);
 });
 
 function runJar(jarName) {
+  updateProgress("Starting " + jarName, 0);
   const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
   const jarPath = path.join(os.homedir(), ".roelite", jarName);
   exec(`${javaPath} -jar ${jarPath}`, (err, stdout, stderr) => {
@@ -93,6 +101,19 @@ function runJar(jarName) {
     log.info(`stdout: ${stdout}`);
     log.error(`stderr: ${stderr}`);
   });
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress += 1; // Increment progress
+    if (progress > 20) {
+      updateProgress("Running " + jarName, progress);
+    } else {
+      updateProgress("Starting " + jarName, progress);
+    }
+    // If progress reaches 100%, stop incrementing it.
+    if (progress > 100) {
+      clearInterval(progressInterval);
+    }
+  }, 100); // Update progress every .1s
 }
 
 function downloadJar(jarName, url) {
@@ -153,10 +174,10 @@ function installJava11() {
             // After renaming, re-check the Java version to confirm installation
             checkJavaVersion((javaVersion) => {
               if (javaVersion) {
-                const launcherVersion = "n/a";
                 mainWindow.webContents.send("versionInfo", {
                   javaVersion,
-                  launcherVersion,
+                  launcherVersion: "n/a",
+                  shouldUpdate: false,
                 }); // Ensure UI is updated with the new version
                 fs.unlink(jdkZipPath, (err) => {});
                 updateProgress("Installation Complete", 100);

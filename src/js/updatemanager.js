@@ -9,7 +9,7 @@ const exec = require("child_process").exec;
 
 const roeliteDir = path.join(os.homedir(), ".roelite");
 const localVersionPath = path.join(roeliteDir, ".launcherversion");
-
+var remoteVersion = "Unknown";
 // Utility to fetch data from a URL
 async function fetchData(url) {
   return new Promise((resolve, reject) => {
@@ -55,7 +55,7 @@ function updateLocalVersion(version) {
 // Check for updates and handle the update process
 async function checkForUpdates(mainWindow) {
   try {
-    const remoteVersion = await getRemoteVersion();
+    remoteVersion = await getRemoteVersion();
     if (
       !fs.existsSync(localVersionPath) ||
       !semver.valid(fs.readFileSync(localVersionPath, "utf-8").trim())
@@ -64,27 +64,30 @@ async function checkForUpdates(mainWindow) {
       log.info(
         "Local version file was missing or invalid. Reset to remote version."
       );
-      sendVersionInfo(mainWindow, remoteVersion);
+      sendVersionInfo(mainWindow, remoteVersion, false);
       return;
     }
-    const localVersion = fs.readFileSync(localVersionPath, "utf-8").trim();
-    sendVersionInfo(mainWindow, localVersion);
+    var localVersion = fs.readFileSync(localVersionPath, "utf-8").trim();
     if (semver.valid(remoteVersion) && semver.gt(remoteVersion, localVersion)) {
-      log.info(`Update available: ${localVersion} -> ${remoteVersion}`);
-      downloadAndUpdate(remoteVersion);
+      localVersion = `Update available: ${localVersion} -> ${remoteVersion}`;
+      log.info(localVersion);
+      sendVersionInfo(mainWindow, localVersion, true);
     } else {
+      sendVersionInfo(mainWindow, localVersion, true);
       log.info("No updates found or already up to date.");
     }
   } catch (error) {
+    sendVersionInfo(mainWindow, "Error", false);
     log.error("Update check failed:", error);
   }
 }
 
 // Send version information to the renderer process
-function sendVersionInfo(mainWindow, version) {
+function sendVersionInfo(mainWindow, launcherVersion, shouldUpdate) {
   mainWindow.webContents.send("versionInfo", {
     javaVersion: "n/a",
-    launcherVersion: version,
+    launcherVersion,
+    shouldUpdate,
   });
 }
 
@@ -109,7 +112,7 @@ function createProgressWindow() {
   return progressWin;
 }
 
-function downloadAndUpdate(remoteVersion) {
+function downloadAndUpdate() {
   const updateExePath = path.join(roeliteDir, "RoeLiteInstaller.exe");
   const updateUrl =
     "https://www.dropbox.com/scl/fi/va6tz1r8o2p8e03wt9kho/RoeLiteInstaller.exe?rlkey=34zo13iuyno3c5aolr785c0q8&dl=1";
@@ -178,4 +181,4 @@ function downloadAndUpdate(remoteVersion) {
     });
 }
 
-module.exports = { checkForUpdates };
+module.exports = { checkForUpdates, downloadAndUpdate };
