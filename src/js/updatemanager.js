@@ -5,78 +5,87 @@ const log = require("electron-log");
 const semver = require("semver");
 const https = require("https");
 const os = require("os");
-const roeliteDir = path.join(os.homedir(), ".roelite");
-const localVersionPath = path.join(roeliteDir, ".launcherversion");
 const exec = require("child_process").exec;
 
-async function getRemoteVersion() {
-  return new Promise((resolve, reject) => {
-    const versionUrl =
-      "https://www.dropbox.com/scl/fi/6a0udocnjvq8nfmvl838u/version.txt?rlkey=ylxiy8ot8479bitl7lyjlisyq&dl=1";
+const roeliteDir = path.join(os.homedir(), ".roelite");
+const localVersionPath = path.join(roeliteDir, ".launcherversion");
 
+// Utility to fetch data from a URL
+async function fetchData(url) {
+  return new Promise((resolve, reject) => {
     https
-      .get(versionUrl, (res) => {
+      .get(url, (res) => {
         let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-        res.on("end", () => {
-          const matches = data.match(/https:\/\/[^\s]+?dl=1/);
-          if (matches) {
-            const directLink = matches[0];
-            https.get(directLink, (versionRes) => {
-              let versionData = "";
-              versionRes.on("data", (versionChunk) => {
-                versionData += versionChunk;
-              });
-              versionRes.on("end", () => {
-                const remoteVersion = versionData.trim();
-                log.info("Remote version retrieved: " + remoteVersion);
-                resolve(remoteVersion);
-              });
-            });
-          } else {
-            log.error(
-              "Could not extract the direct link from the Dropbox response."
-            );
-            reject(new Error("Failed to extract direct download link."));
-          }
-        });
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => resolve(data.trim()));
       })
-      .on("error", (err) => {
-        log.error("Error checking for updates:", err);
-        reject(err);
-      });
+      .on("error", (err) => reject(err));
   });
 }
 
+// Extract the direct download link from the Dropbox page
+async function extractDirectDownloadLink(url) {
+  const data = await fetchData(url);
+  const matches = data.match(/https:\/\/[^\s]+?dl=1/);
+  if (!matches) throw new Error("Direct download link extraction failed.");
+  return matches[0];
+}
+
+// Get the remote version from the version file
+async function getRemoteVersion() {
+  try {
+    const versionUrl =
+      "https://www.dropbox.com/scl/fi/6a0udocnjvq8nfmvl838u/version.txt?rlkey=ylxiy8ot8479bitl7lyjlisyq&dl=1";
+    const directLink = await extractDirectDownloadLink(versionUrl);
+    const remoteVersion = await fetchData(directLink);
+    log.info("Remote version retrieved:", remoteVersion);
+    return remoteVersion;
+  } catch (error) {
+    log.error("Failed to get remote version:", error);
+    throw error;
+  }
+}
+
+// Update the local version file
+function updateLocalVersion(version) {
+  fs.writeFileSync(localVersionPath, version);
+  log.info(`Local version updated to: ${version}`);
+}
+
+// Check for updates and handle the update process
 async function checkForUpdates(mainWindow) {
   try {
     const remoteVersion = await getRemoteVersion();
-    if (!fs.existsSync(localVersionPath)) {
-      // Write the remote version to the local version file
-      fs.writeFileSync(localVersionPath, remoteVersion);
-    }
-    let launcherVersion = fs.readFileSync(localVersionPath, "utf-8").trim();
-    log.info("Local: " + launcherVersion);
     if (
-      semver.valid(remoteVersion) &&
-      semver.gt(remoteVersion, launcherVersion)
+      !fs.existsSync(localVersionPath) ||
+      !semver.valid(fs.readFileSync(localVersionPath, "utf-8").trim())
     ) {
-      log.info(`Update available: ${launcherVersion} -> ${remoteVersion}`);
+      updateLocalVersion(remoteVersion);
+      log.info(
+        "Local version file was missing or invalid. Reset to remote version."
+      );
+      sendVersionInfo(mainWindow, remoteVersion);
+      return;
+    }
+    const localVersion = fs.readFileSync(localVersionPath, "utf-8").trim();
+    sendVersionInfo(mainWindow, localVersion);
+    if (semver.valid(remoteVersion) && semver.gt(remoteVersion, localVersion)) {
+      log.info(`Update available: ${localVersion} -> ${remoteVersion}`);
       downloadAndUpdate(remoteVersion);
     } else {
-      fs.unlink(path.join(roeliteDir, "RoeLiteInstaller.exe"), (err) => {});
       log.info("No updates found or already up to date.");
-      const javaVersion = "n/a";
-      mainWindow.webContents.send("versionInfo", {
-        javaVersion,
-        launcherVersion,
-      });
     }
   } catch (error) {
-    log.error("Failed to check for updates:", error);
+    log.error("Update check failed:", error);
   }
+}
+
+// Send version information to the renderer process
+function sendVersionInfo(mainWindow, version) {
+  mainWindow.webContents.send("versionInfo", {
+    javaVersion: "n/a",
+    launcherVersion: version,
+  });
 }
 
 function createProgressWindow() {
@@ -104,9 +113,7 @@ function downloadAndUpdate(remoteVersion) {
   const updateExePath = path.join(roeliteDir, "RoeLiteInstaller.exe");
   const updateUrl =
     "https://www.dropbox.com/scl/fi/va6tz1r8o2p8e03wt9kho/RoeLiteInstaller.exe?rlkey=34zo13iuyno3c5aolr785c0q8&dl=1";
-
   let progressWin = createProgressWindow();
-
   // Function to update the progress window
   function updateProgressDialog(progress, message) {
     progressWin.webContents.send("update-progress", { progress, message });
@@ -138,7 +145,7 @@ function downloadAndUpdate(remoteVersion) {
                 `Downloading update: ${Math.round(progressPercentage)}%`
               );
               if (progressPercentage > 98.0) {
-                if (!updatedLocal){
+                if (!updatedLocal) {
                   updatedLocal = true;
                   fs.writeFileSync(localVersionPath, remoteVersion);
                 }
@@ -147,9 +154,7 @@ function downloadAndUpdate(remoteVersion) {
                 updateProgressDialog(94, "Update downloaded, applying...");
               }
             });
-
             downloadResponse.pipe(fileStream);
-
             fileStream.on("finish", () => {
               fs.writeFileSync(localVersionPath, remoteVersion);
               progressWin.setClosable(true);
