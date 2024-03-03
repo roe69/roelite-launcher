@@ -3,47 +3,15 @@
   <head>
     <link rel="stylesheet" type="text/css" href="index.css" />
     <title>RoeLite Launcher</title>
-    <style>
-      /* Ensure the body covers the full viewport and no repeat for the background */
-      html,
-      body {
-        height: 100%; /* Make sure the html and body elements are at least as tall as the viewport */
-        width: 100%; /* Make sure the html and body elements are at least as tall as the viewport */
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-      }
-      body {
-        transition: background-image 2s ease-in-out; /* Smooth transition for background image change */
-        background: no-repeat center center fixed; /* No repeat, centered, and fixed position */
-        background-size: 100% 100%; /* Stretch the background image to cover the entire screen */
-      }
-    </style>
   </head>
 
   <body>
     <div id="installText" style="display: none; text-align: center">null</div>
-    <progress
-      id="install-progress"
-      value="0"
-      max="100"
-      style="display: none"
-    ></progress>
-    <div id="buttonContainer" style="display: none">
+    <progress id="install-progress" value="0" max="100"></progress>
+    <div id="buttonContainer">
       <!-- Buttons for launchers will be dynamically inserted here -->
     </div>
-    <footer
-      id="version-footer"
-      style="
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        text-align: center;
-        pointer-events: none;
-      "
-    >
-      Java: Not Checked | Launcher: Unknown
-    </footer>
+    <footer id="version-footer">Java: Not Checked | Launcher: Unknown</footer>
     <script>
       const launchers = ["OSRS", "OSRSPS"];
       const wallpapers = Array.from(
@@ -143,7 +111,9 @@
           versionFooter.textContent = `Java: ${newJavaVersion} | Launcher: ${newLauncherVersion}`;
 
           const buttonContainer = document.getElementById("buttonContainer");
-          updateAvailable = shouldUpdate; // Update the global shouldUpdate based on the latest info
+          if (shouldUpdate === true) {
+            updateAvailable = shouldUpdate;
+          }
           setupLauncherButtons();
         }
       );

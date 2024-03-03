@@ -3,11 +3,20 @@ body {
   background-color: #121212; /* Dark background for dark mode */
   color: #ffffff; /* Light text color for contrast */
   height: 100%;
+  width: 100%; /* Make sure the html and body elements are at least as tall as the viewport */
   margin: 0; /* Remove default margin */
   display: flex;
   flex-direction: column; /* Stack content vertically */
   justify-content: center;
   align-items: center;
+  overflow: hidden;
+  padding: 0;
+}
+
+body {
+  transition: background-image 2s ease-in-out; /* Smooth transition for background image change */
+  background: no-repeat center center fixed; /* No repeat, centered, and fixed position */
+  background-size: 100% 100%; /* Stretch the background image to cover the entire screen */
 }
 
 #buttonContainer {
@@ -35,41 +44,48 @@ body {
   margin-bottom: 15px; /* Space between logo and button */
 }
 
-/* Update button with improved styling */
+button {
+  width: 100%;
+  border: none;
+  padding: 15px;
+  cursor: pointer;
+  font-size: 18px;
+  border-radius: 5px; /* Rounded corners */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* subtle shadow */
+  transition: all 0.3s ease; /* Smooth transition for all changes */
+}
+
+/* Differentiate play and download button colors */
+button.play {
+  background-color: #4caf50; /* Green background */
+  color: #ffffff;
+}
+
+button.play:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+
+button.download {
+  background-color: #008cba; /* Blue background */
+  color: #ffffff;
+}
+
+button.download:hover {
+  background-color: #007ba7; /* Darker blue on hover */
+}
+
+/* Update button with distinct style */
 button.update {
-  background-color: #000000;
-  color: #e6c229;
-  font-weight: bold;
-  width: calc(100% - 20px);
-  order: 99; /* Ensure it's always at the end */
-  transition: background-color 0.3s ease; /* Smooth transition for hover */
+  position: fixed;
+  bottom: 50px;
+  text-align: center;
+  background-color: #f44336; /* Red background for attention */
+  color: #ffffff;
+  width: 50%; /* Full width accounting for padding */
 }
 
 button.update:hover {
-  background-color: #000000;
-  color: #ffeaa7;
-}
-
-/* Play and Download buttons with improved styling */
-button.download,
-button.play {
-  background-color: #3d7e9a;
-  color: #ffffff;
-  transition: background-color 0.3s ease; /* Smooth transition for hover */
-}
-
-button.download:hover,
-button.play:hover {
-  background-color: #2c6178;
-}
-
-button {
-  width: 100%; /* Ensure buttons take full width of their container */
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 5px;
-  font-size: 16px; /* Adjust font size for better readability */
+  background-color: #da190b; /* Darker red on hover */
 }
 
 /* Positioning for installation text and progress bar */
@@ -91,6 +107,14 @@ button {
     -50%,
     20px
   ); /* Adjust for exact positioning below text */
+}
+
+#version-footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
 }
 
 html,

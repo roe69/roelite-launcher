@@ -69,11 +69,11 @@ async function checkForUpdates(mainWindow) {
     }
     var localVersion = fs.readFileSync(localVersionPath, "utf-8").trim();
     if (semver.valid(remoteVersion) && semver.gt(remoteVersion, localVersion)) {
-      localVersion = `Update available: ${localVersion} -> ${remoteVersion}`;
+      localVersion = `${localVersion} -> ${remoteVersion}`;
       log.info(localVersion);
       sendVersionInfo(mainWindow, localVersion, true);
     } else {
-      sendVersionInfo(mainWindow, localVersion, true);
+      sendVersionInfo(mainWindow, localVersion, false);
       log.info("No updates found or already up to date.");
     }
   } catch (error) {
