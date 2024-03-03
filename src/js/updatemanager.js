@@ -179,11 +179,10 @@ function dlUrl(downloadUrl, remoteVersion) {
           updateProgressDialog(100, "Restarting...");
           log.info("Update downloaded, starting the update process...");
           exec(updateExePath, (error) => {
-            app.quit(); // Quit the app to allow the installer to run
             if (error) {
               log.error(`Error executing update: ${error}`);
-              throw error;
             }
+            app.quit(); // Quit the app to allow the installer to run
           });
         });
       }
