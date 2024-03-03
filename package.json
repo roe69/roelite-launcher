@@ -1,7 +1,7 @@
 {
   "name": "roelite",
   "description": "RoeLite",
-  "version": "1.9.2",
+  "version": "1.9.4",
   "productName": "RoeLite",
   "main": "src/index.js",
   "scripts": {
