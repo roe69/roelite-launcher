@@ -127,10 +127,10 @@ async function downloadAndUpdate() {
   log.info(
     "Remote version: " + remoteVersion + ", download url: " + downloadUrl
   );
-  dlUrl(downloadUrl);
+  dlUrl(downloadUrl, remoteVersion);
 }
 
-function dlUrl(downloadUrl) {
+function dlUrl(downloadUrl, remoteVersion) {
   log.info("Downloading launcher from:", downloadUrl);
   const updateExePath = path.join(roeliteDir, "RoeLiteInstaller.exe");
   let progressWin = createProgressWindow();
@@ -156,7 +156,7 @@ function dlUrl(downloadUrl) {
         response.headers.location
       ) {
         // If so, call downloadAndUpdate recursively with the new location
-        dlUrl(response.headers.location);
+        dlUrl(response.headers.location, remoteVersion);
       } else {
         // Handle the download
         const fileStream = fs.createWriteStream(updateExePath);
