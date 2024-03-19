@@ -1,120 +1,119 @@
 html,
 body {
-  background-color: #121212; /* Dark background for dark mode */
-  color: #ffffff; /* Light text color for contrast */
-  height: 100%;
-  width: 100%; /* Make sure the html and body elements are at least as tall as the viewport */
-  margin: 0; /* Remove default margin */
-  display: flex;
-  flex-direction: column; /* Stack content vertically */
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  padding: 0;
+    background-color: #121212; /* Dark background for dark mode */
+    color: #ffffff; /* Light text color for contrast */
+    height: 100%;
+    width: 100%; /* Make sure the html and body elements are at least as tall as the viewport */
+    margin: 0; /* Remove default margin */
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 0;
 }
 
 body {
-  transition: background-image 2s ease-in-out; /* Smooth transition for background image change */
-  background: no-repeat center center fixed; /* No repeat, centered, and fixed position */
-  background-size: 100% 100%; /* Stretch the background image to cover the entire screen */
+    transition: background-image 2s ease-in-out; /* Smooth transition for background image change */
+    background: no-repeat center center fixed; /* No repeat, centered, and fixed position */
+    background-size: 100% 100%; /* Stretch the background image to cover the entire screen */
 }
 
 #buttonContainer {
-  display: flex;
-  flex-wrap: wrap; /* Allow the container to wrap elements */
-  justify-content: center; /* Center-align the button groups */
-  gap: 20px; /* Space between button groups */
-  width: 80%;
-  max-width: 620px; /* Max width to support two buttons per row with some spacing */
+    display: flex;
+    flex-wrap: wrap; /* Allow the container to wrap elements */
+    justify-content: center; /* Center-align the button groups */
+    gap: 20px; /* Space between button groups */
+    width: 80%;
 }
 
 .button-container {
-  display: flex;
-  flex-direction: column; /* Stack logo and button vertically */
-  align-items: center; /* Center-align the contents */
-  width: calc(
-    50% - 10px
-  ); /* Adjust width for two items per row, accounting for gap */
+    display: flex;
+    flex-direction: column; /* Stack logo and button vertically */
+    align-items: center; /* Center-align the contents */
+    width: calc(
+            40% - 10px
+    ); /* Adjust width for 3 items per row, accounting for gap */
 }
 
 .button-logo {
-  pointer-events: none; /* Prevents dragging of images */
-  width: auto; /* Maintain aspect ratio */
-  height: 100px; /* Adjust height so that the buttons align correctly */
-  margin-bottom: 15px; /* Space between logo and button */
+    pointer-events: none; /* Prevents dragging of images */
+    width: auto; /* Maintain aspect ratio */
+    height: 100px; /* Adjust height so that the buttons align correctly */
+    margin-bottom: 15px; /* Space between logo and button */
 }
 
 button {
-  width: 100%;
-  border: none;
-  padding: 15px;
-  cursor: pointer;
-  font-size: 18px;
-  border-radius: 5px; /* Rounded corners */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* subtle shadow */
-  transition: all 0.3s ease; /* Smooth transition for all changes */
+    width: 100%;
+    border: none;
+    padding: 15px;
+    cursor: pointer;
+    font-size: 18px;
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* subtle shadow */
+    transition: all 0.3s ease; /* Smooth transition for all changes */
 }
 
 /* Differentiate play and download button colors */
 button.play {
-  background-color: #4caf50; /* Green background */
-  color: #ffffff;
+    background-color: #4caf50; /* Green background */
+    color: #ffffff;
 }
 
 button.play:hover {
-  background-color: #45a049; /* Darker green on hover */
+    background-color: #45a049; /* Darker green on hover */
 }
 
 button.download {
-  background-color: #008cba; /* Blue background */
-  color: #ffffff;
+    background-color: #008cba; /* Blue background */
+    color: #ffffff;
 }
 
 button.download:hover {
-  background-color: #007ba7; /* Darker blue on hover */
+    background-color: #007ba7; /* Darker blue on hover */
 }
 
 /* Update button with distinct style */
 button.update {
-  position: fixed;
-  bottom: 50px;
-  text-align: center;
-  background-color: #f44336; /* Red background for attention */
-  color: #ffffff;
-  width: 50%; /* Full width accounting for padding */
+    position: fixed;
+    bottom: 25px;
+    text-align: center;
+    background-color: #f44336; /* Red background for attention */
+    color: #ffffff;
+    width: 50%; /* Full width accounting for padding */
 }
 
 button.update:hover {
-  background-color: #da190b; /* Darker red on hover */
+    background-color: #da190b; /* Darker red on hover */
 }
 
 /* Positioning for installation text and progress bar */
 #installText,
 #install-progress {
-  position: fixed; /* Fixed position to overlay content */
-  top: 50%; /* Center vertically */
-  left: 50%;
-  transform: translate(-50%, -10px); /* Adjust for exact centering */
-  width: 80%; /* Responsive width */
-  max-width: 400px; /* Maximum width */
-  text-align: center; /* Center text for #installText */
+    position: fixed; /* Fixed position to overlay content */
+    top: 50%; /* Center vertically */
+    left: 50%;
+    transform: translate(-50%, -10px); /* Adjust for exact centering */
+    width: 80%; /* Responsive width */
+    max-width: 400px; /* Maximum width */
+    text-align: center; /* Center text for #installText */
 }
 
 #install-progress {
-  position: fixed; /* Ensure progress bar is also fixed */
-  top: calc(50% + 20px); /* Position just below the #installText */
-  transform: translate(
-    -50%,
-    20px
-  ); /* Adjust for exact positioning below text */
+    position: fixed; /* Ensure progress bar is also fixed */
+    top: calc(50% + 20px); /* Position just below the #installText */
+    transform: translate(
+            -50%,
+            20px
+    ); /* Adjust for exact positioning below text */
 }
 
 #version-footer {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  pointer-events: none;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    pointer-events: none;
 }
 
 html,
@@ -123,8 +122,8 @@ button,
 #buttonContainer,
 .button-container,
 .button-logo {
-  -webkit-user-select: none; /* Chrome, Safari, Opera */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera, and Firefox */
+    -webkit-user-select: none; /* Chrome, Safari, Opera */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera, and Firefox */
 }
