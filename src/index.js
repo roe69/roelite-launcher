@@ -21,17 +21,18 @@ function setupLogging() {
     log.info("Application starting...");
 }
 
+if (require("electron-squirrel-startup")) return;
+// this should be placed at top of main.js to handle setup events quickly
+if (handleSquirrelEvent()) {
+    // squirrel event handled and app will exit in 1000ms, so don't do anything else
+    return;
+}
+
 function checkFiles() {
     if (!fs.existsSync(roeliteDir)) {
-        fs.mkdir(roeliteDir);
+        fs.mkdir(roeliteDir, () => {
+        });
         log.info("Created roelite dir");
-    }
-
-    if (require("electron-squirrel-startup")) return;
-    // this should be placed at top of main.js to handle setup events quickly
-    if (handleSquirrelEvent()) {
-        // squirrel event handled and app will exit in 1000ms, so don't do anything else
-        return;
     }
 }
 
@@ -40,7 +41,7 @@ app.whenReady().then(() => {
     checkFiles();
     // Create the browser window.
     mainWindow = new BrowserWindow({
-        icon: path.join(__dirname, "/icons/roelite.ico"),
+        icon: path.join(__dirname, "img/icons/roelite.ico"),
         width: 800,
         height: 600,
         webPreferences: {
@@ -62,11 +63,6 @@ app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
 });
 
-ipcMain.on("jarExists", (event, jarName) => {
-    const jarPath = path.join(roeliteDir, jarName);
-    event.returnValue = fs.existsSync(jarPath);
-});
-
 ipcMain.on("checkJava11", (event) => {
     fs.unlink(jdkZipPath, (err) => {
     });
@@ -84,70 +80,97 @@ ipcMain.on("checkJava11", (event) => {
     });
 });
 
-ipcMain.on("downloadJar", (event, jarName, url) => {
-    downloadJar(jarName, url);
-});
-
 ipcMain.on("downloadAndUpdate", (event) => {
     downloadAndUpdate();
 });
 
-ipcMain.on("runJar", (event, jarName) => {
-    runJar(jarName);
+ipcMain.on("runJar", (event, filePath) => {
+    runJar(filePath);
 });
 
-function runJar(jarName) {
-    updateProgress("Starting " + jarName, 0);
-    const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
-    const jarPath = path.join(os.homedir(), ".roelite", jarName);
-    exec(`${javaPath} -jar ${jarPath}`, (err, stdout, stderr) => {
-        if (err) {
-            log.error(`exec error: ${err}`);
-            return;
-        }
-        log.info(`stdout: ${stdout}`);
-        log.error(`stderr: ${stderr}`);
-    });
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-        progress += 1; // Increment progress
-        if (progress > 20) {
-            updateProgress("Running " + jarName, progress);
-        } else {
-            updateProgress("Starting " + jarName, progress);
-        }
-        // If progress reaches 100%, stop incrementing it.
-        if (progress > 100) {
-            clearInterval(progressInterval);
-        }
-    }, 100); // Update progress every .1s
-}
+async function runJar(filePath) {
+    try {
+        const jarPath = await downloadJar(filePath); // Wait for the jar to be downloaded
+        const jarName = path.basename(filePath);
+        updateProgress("Starting " + jarName, 0);
+        const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
 
-function downloadJar(jarName, url) {
-    const jarPath = path.join(os.homedir(), ".roelite", jarName);
-    if (!fs.existsSync(jarPath)) {
-        const file = fs.createWriteStream(jarPath);
-        https.get(url, function (response) {
-            const totalBytes = 1000000; //1mb
-            let downloadedBytes = 0;
-            response.on("data", function (chunk) {
-                file.write(chunk);
-                downloadedBytes += chunk.length;
-                updateProgress(
-                    "Downloading " + jarName,
-                    Math.floor((downloadedBytes / totalBytes) * 90)
-                );
-            });
-            response.on("end", function () {
-                file.end();
-                updateProgress("Installation Complete", 100);
-                mainWindow.webContents.send("downloadComplete", jarName);
-            });
+        exec(`${javaPath} -jar "${jarPath}"`, (err, stdout, stderr) => { // Ensure path is quoted to handle spaces
+            if (err) {
+                log.error(`exec error: ${err}`);
+                return;
+            }
+            log.info(`stdout: ${stdout}`);
+            log.error(`stderr: ${stderr}`);
         });
-    } else {
-        log.info(jarName + " already exists.");
+
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress += 1; // Increment progress
+            if (progress > 20) {
+                updateProgress("Running " + jarName, progress);
+            } else {
+                updateProgress("Starting " + jarName, progress);
+            }
+            // If progress reaches 100%, stop incrementing it.
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+            }
+        }, 100); // Update progress every .1s
+
+    } catch (error) {
+        console.error("Error during JAR operation:", error);
     }
 }
+
+function downloadJar(filePath) {
+    return new Promise((resolve, reject) => {
+        const jarName = path.basename(filePath);
+        const jarPath = path.join(os.homedir(), ".roelite", jarName);
+        if (fs.existsSync(jarPath)) {
+            fs.unlinkSync(jarPath); // Ensure the file is deleted before downloading
+        }
+        console.log("Downloading JAR from path: " + filePath);
+        const file = fs.createWriteStream(jarPath);
+        const options = {
+            hostname: 'cloud2.roelite.net',
+            port: 443,
+            path: '/files/download',
+            method: 'GET',
+            headers: {
+                'branch': "dev",
+                'filename': filePath,
+            },
+            rejectUnauthorized: false,
+        };
+
+        const request = https.get(options, (response) => {
+            if (response.statusCode === 200) {
+                response.pipe(file);
+                file.on('finish', () => {
+                    file.close(() => {
+                        console.log(`${jarName} downloaded successfully.`);
+                        resolve(jarPath); // Resolve the promise with the jarPath
+                    });
+                });
+            } else {
+                file.close();
+                fs.unlink(jarPath, () => {
+                }); // Delete the partial file
+                reject(new Error(`Failed to download ${jarName}: Server responded with status code ${response.statusCode}`));
+            }
+        });
+
+        request.on('error', (e) => {
+            console.error(`Problem with request: ${e.message}`);
+            file.close();
+            fs.unlink(jarPath, () => {
+            }); // Delete the partial file
+            reject(e);
+        });
+    });
+}
+
 
 // Function to download and install Java 11
 function installJava11() {

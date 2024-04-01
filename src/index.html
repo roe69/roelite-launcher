@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <link href="index.css" rel="stylesheet" type="text/css"/>
+    <link href="./index.css" rel="stylesheet" type="text/css"/>
     <title>RoeLite Launcher</title>
 </head>
 
@@ -13,7 +13,7 @@
 </div>
 <footer id="version-footer">Java: Not Checked | Launcher: Unknown</footer>
 <script>
-    const launchers = ["OSRS", "OSRSPS", "OSNR", "RoatPkz"];
+    const launchers = ["OSRS", "OSRSPS", "OSNR"];
     const wallpapers = Array.from(
         {length: 11},
         (_, index) => `${index + 1}.webp`
@@ -33,7 +33,7 @@
         // Get the current background image URL
         const currentBackgroundImage = document.body.style.backgroundImage;
         // Create a new URL for the background image
-        const newBackgroundImage = `url('./wallpapers/${randomWallpaper}')`;
+        const newBackgroundImage = `url('./img/wallpapers/${randomWallpaper}')`;
         // If the new background is different from the current, update it
         if (currentBackgroundImage !== newBackgroundImage) {
             document.body.style.backgroundImage = newBackgroundImage;
@@ -60,32 +60,10 @@
             }
             // Below is the logic for other buttons that are not for updating the launcher
             const jarName = `${name}-Launcher.jar`;
-            const isDownload = this.classList.contains("download");
-            if (isDownload) {
-                window.api.downloadJar(
-                    jarName,
-                    `https://dev.roelite.net/${name}/${jarName}`
-                );
-            } else {
-                window.api.runJar(jarName);
-            }
+            window.api.runJar(`${name.toLowerCase()}/` + jarName);
         });
         return button;
     }
-
-    function updateButton(button, exists, name) {
-        button.innerText = exists ? `Play ${name}` : `Download ${name}`;
-        button.classList.remove("download", "play");
-        button.classList.add(exists ? "play" : "download");
-    }
-
-    window.api.onDownloadComplete((event, jarName) => {
-        const name = jarName.replace("-Launcher.jar", "");
-        const button = document.getElementById(`play-${name}`);
-        if (button) {
-            updateButton(button, true, name);
-        }
-    });
 
     window.api.onVersionInfo(
         ({javaVersion, launcherVersion, shouldUpdate}) => {
@@ -100,8 +78,6 @@
                     acc[key] = value;
                     return acc;
                 }, {});
-
-            // Updating footer text
             const newJavaVersion =
                 javaVersion !== "n/a" ? javaVersion : currentVersions["Java"];
             const newLauncherVersion =
@@ -109,8 +85,6 @@
                     ? launcherVersion
                     : currentVersions["Launcher"];
             versionFooter.textContent = `Java: ${newJavaVersion} | Launcher: ${newLauncherVersion}`;
-
-            const buttonContainer = document.getElementById("buttonContainer");
             if (shouldUpdate === true) {
                 updateAvailable = shouldUpdate;
             }
@@ -146,19 +120,18 @@
         }
         container.style.display = "flex";
         launchers.forEach((name) => {
-            const jarName = `${name}-Launcher.jar`;
-            const exists = window.api.jarExists(jarName);
             // Create a container for each logo and button pair
             const buttonContainer = document.createElement("div");
             buttonContainer.className = "button-container";
             // Create logo element
             const logo = document.createElement("img");
-            logo.src = `./icons/${name.toLowerCase()}.png`;
+            logo.src = `./img/icons/${name.toLowerCase()}.png`;
             logo.className = "button-logo";
             buttonContainer.appendChild(logo); // Append logo to the button container
             // Create button
             const button = createButton(name);
-            updateButton(button, exists, name);
+            button.innerText = `Play ${name}`;
+            button.classList.add("play");
             buttonContainer.appendChild(button); // Append button to the button container
             // Create a progress bar container
             const progressBarContainer = document.createElement("div");
