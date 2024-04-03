@@ -1,13 +1,12 @@
 {
   "name": "roelite",
   "description": "RoeLite",
-  "version": "1.9.8",
+  "version": "1.9.9",
   "productName": "RoeLite",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "postmake": "node -e \"require('fs').mkdirSync('./out', { recursive: true }); require('fs').writeFileSync('./out/make/squirrel.windows/x64/version.txt', require('./package.json').version);\"",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
@@ -30,6 +29,6 @@
   "devDependencies": {
     "@electron-forge/cli": "^7.2.0",
     "@electron-forge/maker-squirrel": "^7.2.0",
-    "electron": "28.2.2"
+    "electron": "30.0.0-beta.5"
   }
 }
