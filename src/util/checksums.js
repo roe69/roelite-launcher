@@ -1,4 +1,6 @@
 const https = require('https');
+const fs = require('fs');
+const crypto = require('crypto');
 
 let checksums = {}; // Global variable to store checksums
 
@@ -14,7 +16,6 @@ function loadChecksums() {
         },
         rejectUnauthorized: false,
     };
-
     const request = https.get(options, function (response) {
         if (response.statusCode === 200) {
             let rawData = '';
@@ -34,16 +35,35 @@ function loadChecksums() {
             console.error(`Failed to download checksums.json: Server responded with status code ${response.statusCode}`);
         }
     });
-
     request.on('error', function (e) {
         console.error(`Problem with request: ${e.message}`);
     });
 }
 
-setInterval(loadChecksums, 5 * 60 * 1000);
-
 function getChecksum(key) {
+    console.log("Getting checksum for", key);
     return checksums[key] || null;
 }
 
-module.exports = {getChecksum, loadChecksums};
+async function getFileChecksum(filePath) {
+    filePath = filePath.toLowerCase();
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('MD5');
+        const stream = fs.createReadStream(filePath);
+
+        stream.on('data', function (data) {
+            hash.update(data);
+        });
+
+        stream.on('end', function () {
+            resolve(hash.digest('hex'));
+        });
+
+        stream.on('error', function (err) {
+            reject(err);
+        });
+    });
+}
+
+
+module.exports = {getChecksum, loadChecksums, getFileChecksum};

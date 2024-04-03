@@ -9,6 +9,7 @@ const https = require("https");
 const {exec} = require("child_process");
 const {ipcMain, net} = require("electron");
 const extract = require("extract-zip");
+const {loadChecksums, getChecksum, getFileChecksum} = require("./util/checksums");
 const roeliteDir = path.join(os.homedir(), ".roelite");
 const javaBin = path.join(roeliteDir, "jre", "bin");
 const jdkZipPath = path.join(roeliteDir, "openjdk-11.zip");
@@ -24,9 +25,10 @@ function setupLogging() {
 if (require("electron-squirrel-startup")) return;
 // this should be placed at top of main.js to handle setup events quickly
 if (handleSquirrelEvent()) {
-    // squirrel event handled and app will exit in 1000ms, so don't do anything else
-    return;
 }
+
+loadChecksums();
+setInterval(() => loadChecksums(), 1_800_000);//every 30 minutes
 
 function checkFiles() {
     if (!fs.existsSync(roeliteDir)) {
@@ -41,7 +43,7 @@ app.whenReady().then(() => {
     checkFiles();
     // Create the browser window.
     mainWindow = new BrowserWindow({
-        icon: path.join(__dirname, "img/icons/roelite.ico"),
+        icon: path.join(__dirname, "./img/icons/roelite.ico"),
         width: 800,
         height: 600,
         webPreferences: {
@@ -90,7 +92,7 @@ ipcMain.on("runJar", (event, filePath) => {
 
 async function runJar(filePath) {
     try {
-        const jarPath = await downloadJar(filePath); // Wait for the jar to be downloaded
+        const jarPath = await downloadJarIfChanged(filePath);
         const jarName = path.basename(filePath);
         updateProgress("Starting " + jarName, 0);
         const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
@@ -123,15 +125,31 @@ async function runJar(filePath) {
     }
 }
 
-function downloadJar(filePath) {
+async function downloadJarIfChanged(filePath) {
+    const jarName = path.basename(filePath);
+    const jarPath = path.join(os.homedir(), ".roelite", jarName);
+    // Ensure checksums are loaded and compared
+    const remoteChecksum = getChecksum(filePath); // getChecksum seems to be synchronous now
+    const localChecksum = await getFileChecksum(jarPath);
+    console.log("Local:", localChecksum, "Remote:", remoteChecksum);
+    // If checksums match, the file is up to date
+    if (localChecksum === remoteChecksum) {
+        console.log(`${jarName} is up to date.`);
+        return jarPath;
+    }
+    // Check for write access
+    const canWrite = await canWriteToFile(jarPath);
+    if (!canWrite) {
+        console.error(`Cannot write to ${jarName}: file may be in use.`);
+        return jarPath;
+    }
+    console.log("Downloading JAR from path: " + filePath);
     return new Promise((resolve, reject) => {
-        const jarName = path.basename(filePath);
-        const jarPath = path.join(os.homedir(), ".roelite", jarName);
-        if (fs.existsSync(jarPath)) {
-            fs.unlinkSync(jarPath); // Ensure the file is deleted before downloading
-        }
-        console.log("Downloading JAR from path: " + filePath);
-        const file = fs.createWriteStream(jarPath);
+        const fileStream = fs.createWriteStream(jarPath, {flags: 'w'});
+        fileStream.on('error', err => {
+            console.error(`Error writing to file ${jarName}:`, err);
+            reject(new Error(`Error writing to file ${jarName}: ${err.message}`));
+        });
         const options = {
             hostname: 'cloud2.roelite.net',
             port: 443,
@@ -143,34 +161,44 @@ function downloadJar(filePath) {
             },
             rejectUnauthorized: false,
         };
-
-        const request = https.get(options, (response) => {
+        const request = https.get(options, response => {
             if (response.statusCode === 200) {
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close(() => {
-                        console.log(`${jarName} downloaded successfully.`);
-                        resolve(jarPath); // Resolve the promise with the jarPath
-                    });
+                response.pipe(fileStream).on('finish', () => {
+                    console.log(`${jarName} downloaded successfully.`);
+                    resolve(jarPath);
                 });
             } else {
-                file.close();
-                fs.unlink(jarPath, () => {
-                }); // Delete the partial file
-                reject(new Error(`Failed to download ${jarName}: Server responded with status code ${response.statusCode}`));
+                console.error(`Failed to download ${jarName}: Server responded with status code ${response.statusCode}`);
+                fileStream.end(() => {
+                    fs.unlink(jarPath, () => reject(new Error(`Failed to download ${jarName}: Server responded with status code ${response.statusCode}`)));
+                });
             }
         });
-
-        request.on('error', (e) => {
-            console.error(`Problem with request: ${e.message}`);
-            file.close();
-            fs.unlink(jarPath, () => {
-            }); // Delete the partial file
-            reject(e);
+        request.on('error', err => {
+            console.error(`Problem with request: ${err.message}`);
+            fileStream.end(() => {
+                fs.unlink(jarPath, () => reject(err));
+            });
         });
     });
 }
 
+function canWriteToFile(filePath) {
+    return new Promise((resolve) => {
+        fs.open(filePath, 'r+', (err, fd) => {
+            if (err) {
+                resolve(false); // If there's an error opening the file for writing, resolve as false
+            } else {
+                fs.close(fd, (err) => {
+                    if (err) {
+                        console.error(`Error closing file ${filePath}:`, err);
+                    }
+                    resolve(true); // Successfully opened and closed the file for writing
+                });
+            }
+        });
+    });
+}
 
 // Function to download and install Java 11
 function installJava11() {

@@ -102,7 +102,7 @@ function sendVersionInfo(mainWindow, launcherVersion, shouldUpdate) {
 function createProgressWindow() {
     if (progressWindow === null) {
         progressWindow = new BrowserWindow({
-            icon: path.join(__dirname, "../icons/roelite.ico"),
+            icon: path.join(__dirname, "../img/icons/roelite.ico"),
             width: 500,
             height: 100,
             webPreferences: {

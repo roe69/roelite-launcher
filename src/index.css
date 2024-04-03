@@ -64,15 +64,6 @@ button.play:hover {
     background-color: #45a049; /* Darker green on hover */
 }
 
-button.download {
-    background-color: #008cba; /* Blue background */
-    color: #ffffff;
-}
-
-button.download:hover {
-    background-color: #007ba7; /* Darker blue on hover */
-}
-
 /* Update button with distinct style */
 button.update {
     position: fixed;
