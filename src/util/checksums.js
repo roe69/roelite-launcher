@@ -46,24 +46,28 @@ function getChecksum(key) {
 }
 
 async function getFileChecksum(filePath) {
-    filePath = filePath.toLowerCase();
-    return new Promise((resolve, reject) => {
-        const hash = crypto.createHash('MD5');
-        const stream = fs.createReadStream(filePath);
-
-        stream.on('data', function (data) {
-            hash.update(data);
+    try {
+        if (!fs.existsSync(filePath)) {
+            return null;
+        }
+        return new Promise((resolve, reject) => {
+            const hash = crypto.createHash('MD5');
+            const stream = fs.createReadStream(filePath);
+            stream.on('data', function (data) {
+                hash.update(data);
+            });
+            stream.on('end', function () {
+                resolve(hash.digest('hex'));
+            });
+            stream.on('error', function (err) {
+                reject(err);
+            });
         });
-
-        stream.on('end', function () {
-            resolve(hash.digest('hex'));
-        });
-
-        stream.on('error', function (err) {
-            reject(err);
-        });
-    });
+    } catch (err) {
+        // If the file does not exist or is not readable, return null
+        console.error("File does not exist or cannot be read:", filePath);
+        return null;
+    }
 }
-
 
 module.exports = {getChecksum, loadChecksums, getFileChecksum};

@@ -138,10 +138,12 @@ async function downloadJarIfChanged(filePath) {
         return jarPath;
     }
     // Check for write access
-    const canWrite = await canWriteToFile(jarPath);
-    if (!canWrite) {
-        console.error(`Cannot write to ${jarName}: file may be in use.`);
-        return jarPath;
+    if (localChecksum) {
+        const canWrite = await canWriteToFile(jarPath);
+        if (!canWrite) {
+            console.error(`Cannot write to ${jarName}: file may be in use.`);
+            return jarPath;
+        }
     }
     console.log("Downloading JAR from path: " + filePath);
     return new Promise((resolve, reject) => {
