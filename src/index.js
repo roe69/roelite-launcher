@@ -97,7 +97,7 @@ async function runJar(filePath) {
         updateProgress("Starting " + jarName, 0);
         const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
 
-        exec(`${javaPath} -jar "${jarPath}"`, (err, stdout, stderr) => { // Ensure path is quoted to handle spaces
+        exec(`"${javaPath}" -jar "${jarPath}"`, (err, stdout, stderr) => { // Ensure path is quoted to handle spaces
             if (err) {
                 log.error(`exec error: ${err}`);
                 return;
@@ -259,8 +259,9 @@ function installJava11() {
 
 // Helper function to check Java version
 function checkJavaVersion(callback) {
-    exec(`${javaBin}/java.exe -version`, (error, stdout, stderr) => {
+    exec(`"${javaBin}/java.exe" -version`, (error, stdout, stderr) => {
         if (error) {
+            log.error("Error checking Java version: " + error);
             return callback(null);
         }
         const versionMatch = stderr.match(/version "(\d+\.\d+\.\d+)/);
