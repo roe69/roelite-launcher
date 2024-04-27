@@ -1,13 +1,14 @@
 {
   "name": "roelite",
   "description": "RoeLite",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "productName": "RoeLite",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "makemac": "electron-forge make --platform=darwin",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
   },
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.2.0",
+    "@electron-forge/maker-dmg": "^7.4.0",
     "@electron-forge/maker-squirrel": "^7.2.0",
     "electron": "30.0.0-beta.5"
   }

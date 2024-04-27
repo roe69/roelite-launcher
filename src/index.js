@@ -97,13 +97,7 @@ async function runJar(filePath) {
         updateProgress("Starting " + jarName, 0);
         const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
 
-        exec(`"${javaPath}" -jar "${jarPath}"`, (err, stdout, stderr) => { // Ensure path is quoted to handle spaces
-            if (err) {
-                log.error(`exec error: ${err}`);
-                return;
-            }
-            log.info(`stdout: ${stdout}`);
-            log.error(`stderr: ${stderr}`);
+        exec(`"${javaPath}" -jar "${jarPath}"`, () => {
         });
 
         let progress = 0;

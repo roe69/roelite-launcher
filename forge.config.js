@@ -21,6 +21,17 @@ module.exports = {
                 setupIcon: "./src/img/icons/RoeLite.ico",
                 skipUpdateIcon: true,
             }
+        },
+        {
+            name: "@electron-forge/maker-dmg",
+            config: {
+                name: "RoeLite",
+                icon: "./src/img/icons/RoeLite.icns",
+                overwrite: true,
+                background: "./src/img/icons/RoeLite.png",
+                format: "ULFO"
+            }
         }
+
     ]
 };
