@@ -91,7 +91,6 @@ ipcMain.on("runJar", (event, filePath) => {
 });
 
 async function runJar(filePath) {
-    let progressInterval;
     try {
         const jarPath = await downloadJarIfChanged(filePath);
         const jarName = path.basename(filePath);
@@ -99,9 +98,9 @@ async function runJar(filePath) {
         const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
 
         const process = exec(`"${javaPath}" -jar "${jarPath}"`, (error, stdout, stderr) => {
-            clearInterval(progressInterval); // Ensure the interval is cleared when the process completes
             if (error) {
                 log.error("JAR launch failed:", error);
+                updateProgress("Error launching " + jarName, 100);
                 log.info("Deleting the invalid JAR file.");
                 fs.unlink(jarPath, err => {
                     if (err) {
@@ -112,24 +111,24 @@ async function runJar(filePath) {
                 });
             } else {
                 log.info("JAR launched successfully:", stdout);
+                updateProgress("Running " + jarName, 100);
             }
         });
 
         let progress = 0;
-        progressInterval = setInterval(() => {
-            progress += 1; // Increment progress
-            if (progress > 20) {
-                updateProgress("Running " + jarName, progress);
-            } else {
-                updateProgress("Starting " + jarName, progress);
-            }
-            if (progress >= 100) {
+        let progressInterval = setInterval(() => {
+            progress += 5; // Increment progress more reasonably
+            updateProgress("Starting " + jarName, progress);
+            if (progress >= 95) {
                 clearInterval(progressInterval);
+                updateProgress("Running " + jarName, 100);
+            } else if (progress >= 20) {
+                updateProgress("Running " + jarName, progress);
             }
-        }, 100); // Update progress every .1s
+        }, 500); // Update progress every 0.5s
     } catch (error) {
-        clearInterval(progressInterval); // Clear the interval on error
-        console.error("Error during JAR operation:", error);
+        updateProgress("Error", 100);
+        log.error("Error during JAR operation:", error);
         fs.unlink(filePath, err => {
             if (err) console.error("Failed to delete the JAR file after preparation error:", err);
             else console.log("Deleted the JAR file after encountering an error in preparation.");
@@ -217,8 +216,7 @@ function canWriteToFile(filePath) {
 // Function to download and install Java 11
 function installJava11() {
     updateProgress("Downloading Java", 0);
-    const jdkUrl =
-        "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.22%2B7/OpenJDK11U-jre_x64_windows_hotspot_11.0.22_7.zip";
+    const jdkUrl = "https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.22%2B7/OpenJDK11U-jre_x64_windows_hotspot_11.0.22_7.zip";
     const request = net.request(jdkUrl);
     request.on("response", (response) => {
         const totalBytes = parseInt(response.headers["content-length"], 10);
@@ -227,44 +225,30 @@ function installJava11() {
         response.on("data", (chunk) => {
             writeStream.write(chunk);
             downloadedBytes += chunk.length;
-            updateProgress(
-                "Downloading Java",
-                Math.floor((downloadedBytes / totalBytes) * 90)
-            );
+            updateProgress("Downloading Java", Math.floor((downloadedBytes / totalBytes) * 90));
         });
         response.on("end", async () => {
             writeStream.close();
-            updateProgress("Unzipping Files", 90);
             try {
                 await extract(jdkZipPath, {dir: roeliteDir});
-                updateProgress("Renaming Folder", 95); // Assume unzipping almost complete
-                fs.rename(
-                    path.join(roeliteDir, "jdk-11.0.22+7-jre"),
-                    path.join(roeliteDir, "jre"),
-                    (err) => {
-                        if (err) throw err;
-                        // After renaming, re-check the Java version to confirm installation
-                        checkJavaVersion((javaVersion) => {
-                            if (javaVersion) {
-                                mainWindow.webContents.send("versionInfo", {
-                                    javaVersion,
-                                    launcherVersion: "n/a",
-                                    shouldUpdate: false,
-                                }); // Ensure UI is updated with the new version
-                                fs.unlink(jdkZipPath, (err) => {
-                                });
-                                updateProgress("Installation Complete", 100);
-                            } else {
-                                // Handle error or notify user of installation failure
-                                log.error("Java installation check failed.");
-                            }
-                        });
+                updateProgress("Unzipping Files", 95);
+                fs.rename(path.join(roeliteDir, "jdk-11.0.22+7-jre"), path.join(roeliteDir, "jre"), async (err) => {
+                    if (err) {
+                        log.error("Failed to rename JDK folder:", err);
+                        updateProgress("Installation Failed", 100);
+                        return;
                     }
-                );
+                    updateProgress("Installation Complete", 100);
+                });
             } catch (error) {
                 log.error("Failed to unzip JDK:", error);
+                updateProgress("Unzipping Failed", 100);
             }
         });
+    });
+    request.on("error", (err) => {
+        log.error("Download failed:", err);
+        updateProgress("Download Failed", 100);
     });
     request.end();
 }
