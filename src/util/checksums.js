@@ -6,7 +6,7 @@ let checksums = {}; // Global variable to store checksums
 
 function loadChecksums() {
     const options = {
-        hostname: 'cloud2.roelite.net',
+        hostname: 'cloud.roelite.net',
         port: 443,
         path: '/files/download',
         method: 'GET',

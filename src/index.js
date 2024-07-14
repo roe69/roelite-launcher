@@ -91,18 +91,18 @@ ipcMain.on("runJar", (event, filePath) => {
 });
 
 async function runJar(filePath) {
+    let progressInterval;
     try {
         const jarPath = await downloadJarIfChanged(filePath);
         const jarName = path.basename(filePath);
         updateProgress("Starting " + jarName, 0);
         const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
 
-        // Using exec to run the jar and check for errors
-        exec(`"${javaPath}" -jar "${jarPath}"`, (error, stdout, stderr) => {
+        const process = exec(`"${javaPath}" -jar "${jarPath}"`, (error, stdout, stderr) => {
+            clearInterval(progressInterval); // Ensure the interval is cleared when the process completes
             if (error) {
                 log.error("JAR launch failed:", error);
                 log.info("Deleting the invalid JAR file.");
-                // Delete the JAR file if the process fails to start
                 fs.unlink(jarPath, err => {
                     if (err) {
                         log.error("Failed to delete invalid JAR file:", err);
@@ -110,28 +110,26 @@ async function runJar(filePath) {
                         log.info(jarName + " was deleted successfully.");
                     }
                 });
-                return;
+            } else {
+                log.info("JAR launched successfully:", stdout);
             }
-            log.info("JAR launched successfully:", stdout);
         });
 
         let progress = 0;
-        const progressInterval = setInterval(() => {
+        progressInterval = setInterval(() => {
             progress += 1; // Increment progress
             if (progress > 20) {
                 updateProgress("Running " + jarName, progress);
             } else {
                 updateProgress("Starting " + jarName, progress);
             }
-            // If progress reaches 100%, stop incrementing it.
             if (progress >= 100) {
                 clearInterval(progressInterval);
             }
         }, 100); // Update progress every .1s
-
     } catch (error) {
+        clearInterval(progressInterval); // Clear the interval on error
         console.error("Error during JAR operation:", error);
-        // Delete the JAR file if there's an error in preparation phase
         fs.unlink(filePath, err => {
             if (err) console.error("Failed to delete the JAR file after preparation error:", err);
             else console.log("Deleted the JAR file after encountering an error in preparation.");
@@ -167,7 +165,7 @@ async function downloadJarIfChanged(filePath) {
             reject(new Error(`Error writing to file ${jarName}: ${err.message}`));
         });
         const options = {
-            hostname: 'cloud2.roelite.net',
+            hostname: 'cloud.roelite.net',
             port: 443,
             path: '/files/download',
             method: 'GET',
