@@ -97,7 +97,22 @@ async function runJar(filePath) {
         updateProgress("Starting " + jarName, 0);
         const javaPath = path.join(roeliteDir, "jre", "bin", "java.exe");
 
-        exec(`"${javaPath}" -jar "${jarPath}"`, () => {
+        // Using exec to run the jar and check for errors
+        exec(`"${javaPath}" -jar "${jarPath}"`, (error, stdout, stderr) => {
+            if (error) {
+                log.error("JAR launch failed:", error);
+                log.info("Deleting the invalid JAR file.");
+                // Delete the JAR file if the process fails to start
+                fs.unlink(jarPath, err => {
+                    if (err) {
+                        log.error("Failed to delete invalid JAR file:", err);
+                    } else {
+                        log.info(jarName + " was deleted successfully.");
+                    }
+                });
+                return;
+            }
+            log.info("JAR launched successfully:", stdout);
         });
 
         let progress = 0;
@@ -116,6 +131,11 @@ async function runJar(filePath) {
 
     } catch (error) {
         console.error("Error during JAR operation:", error);
+        // Delete the JAR file if there's an error in preparation phase
+        fs.unlink(filePath, err => {
+            if (err) console.error("Failed to delete the JAR file after preparation error:", err);
+            else console.log("Deleted the JAR file after encountering an error in preparation.");
+        });
     }
 }
 
